@@ -9,6 +9,7 @@ from config import Config
 from datetime import datetime
 from crypto_utils import encrypt_password, decrypt_password
 from cryptography.fernet import InvalidToken
+from threading import Thread
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -21,8 +22,17 @@ with app.app_context():
 
 # ---------------- HELPER FUNCTIONS ----------------
 
+def send_async_email(app, msg):
+    """Send email asynchronously in a background thread"""
+    with app.app_context():
+        try:
+            mail.send(msg)
+            print(f"✅ Email sent successfully to {msg.recipients}")
+        except Exception as e:
+            print(f"❌ Error sending email to {msg.recipients}: {e}")
+
 def send_invitation_email(recipient_email, service_name, inviter_email):
-    """Send invitation email to unregistered user"""
+    """Send invitation email to unregistered user (non-blocking)"""
     try:
         msg = Message(
             subject=f"You've been invited to access {service_name} on CredVault",
@@ -79,14 +89,15 @@ CredVault Team
 </html>
         """
 
-        mail.send(msg)
+        # Send email asynchronously to avoid blocking
+        Thread(target=send_async_email, args=(app._get_current_object(), msg)).start()
         return True
     except Exception as e:
-        print(f"Error sending email: {e}")
+        print(f"Error preparing email: {e}")
         return False
 
 def send_share_notification_email(recipient_email, service_name, inviter_email):
-    """Send notification email to registered user when service is shared"""
+    """Send notification email to registered user when service is shared (non-blocking)"""
     try:
         msg = Message(
             subject=f"{inviter_email} shared {service_name} with you on CredVault",
@@ -136,14 +147,15 @@ CredVault Team
 </html>
         """
 
-        mail.send(msg)
+        # Send email asynchronously to avoid blocking
+        Thread(target=send_async_email, args=(app._get_current_object(), msg)).start()
         return True
     except Exception as e:
-        print(f"Error sending email: {e}")
+        print(f"Error preparing email: {e}")
         return False
 
 def send_welcome_email(recipient_email, shared_services_count):
-    """Send welcome email to new user with pending invites"""
+    """Send welcome email to new user with pending invites (non-blocking)"""
     try:
         msg = Message(
             subject="Welcome to CredVault! You have shared services waiting",
@@ -192,10 +204,11 @@ CredVault Team
 </html>
         """
 
-        mail.send(msg)
+        # Send email asynchronously to avoid blocking
+        Thread(target=send_async_email, args=(app._get_current_object(), msg)).start()
         return True
     except Exception as e:
-        print(f"Error sending email: {e}")
+        print(f"Error preparing email: {e}")
         return False
 
 # ---------------- AUTH ----------------
@@ -461,12 +474,9 @@ def share_service(service_id):
         db.session.add(share)
         db.session.commit()
 
-        # Send notification email to registered user
-        email_sent = send_share_notification_email(target_email, svc.name, current_user.email)
-        if email_sent:
-            flash(f'Service shared successfully with {target_email}! Notification email sent.', 'success')
-        else:
-            flash(f'Service shared successfully with {target_email}! (Email notification failed)', 'warning')
+        # Send notification email to registered user (async, won't block)
+        send_share_notification_email(target_email, svc.name, current_user.email)
+        flash(f'✅ Service shared successfully with {target_email}! Notification email will be sent.', 'success')
     else:
         # User doesn't exist - create pending invite
         existing_invite = PendingInvite.query.filter_by(email=target_email, service_id=service_id).first()
@@ -482,12 +492,9 @@ def share_service(service_id):
         db.session.add(invite)
         db.session.commit()
 
-        # Send invitation email to unregistered user
-        email_sent = send_invitation_email(target_email, svc.name, current_user.email)
-        if email_sent:
-            flash(f'Invitation sent to {target_email}! They will get access when they register. Email sent.', 'success')
-        else:
-            flash(f'Invitation created for {target_email}. They will get access when they register. (Email failed to send)', 'warning')
+        # Send invitation email to unregistered user (async, won't block)
+        send_invitation_email(target_email, svc.name, current_user.email)
+        flash(f'📧 Invitation sent to {target_email}! They will get access when they register.', 'success')
 
     return redirect(url_for('dashboard'))
 
