@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Pending Invitations</h2>
+<p class="text-muted">These users will get access when they register</p>
+
+{% if invites %}
+<div class="card">
+  <div class="card-body">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Service</th>
+          <th>Invited On</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for invite in invites %}
+        <tr>
+          <td>{{ invite.email }}</td>
+          <td>{{ invite.service_name }}</td>
+          <td>{{ invite.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('cancel_invite', invite_id=invite.id) }}" style="display:inline;">
+              <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Cancel this invitation?')">Cancel</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+  No pending invitations. Share a service with an unregistered email to create an invitation.
+</div>
+{% endif %}
+
+<div class="mt-3">
+  <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
+</div>
+{% endblock %}
+

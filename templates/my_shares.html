@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>My Shared Services</h2>
+<p class="text-muted">Services you've shared with others</p>
+
+{% if shares %}
+<div class="card">
+  <div class="card-body">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Service Name</th>
+          <th>Username</th>
+          <th>Shared With</th>
+          <th>Shared On</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for share in shares %}
+        <tr>
+          <td><strong>{{ share.service_name }}</strong></td>
+          <td>{{ share.service_username }}</td>
+          <td>{{ share.shared_with_email }}</td>
+          <td>{{ share.shared_at.strftime('%Y-%m-%d %H:%M') if share.shared_at else 'N/A' }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('unshare', share_id=share.share_id) }}" style="display:inline;">
+              <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Revoke access for {{ share.shared_with_email }}?')">
+                🚫 Revoke Access
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="alert alert-info mt-3">
+  <strong>💡 Tip:</strong> Revoking access will immediately prevent the user from accessing this service.
+</div>
+{% else %}
+<div class="alert alert-secondary">
+  <p>You haven't shared any services yet.</p>
+  <p>Go to your <a href="{{ url_for('dashboard') }}">dashboard</a> to share services with others.</p>
+</div>
+{% endif %}
+
+<div class="mt-3">
+  <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
+</div>
+{% endblock %}
+

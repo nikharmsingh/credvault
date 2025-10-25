@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Service Access</h2>
+
+{% if service %}
+  <p><strong>{{ service.name }}</strong></p>
+  <p>Username: {{ service.username }}</p>
+  {% if password_plain %}
+    <p>Password: <code>{{ password_plain }}</code></p>
+  {% else %}
+    <p>Password: <em>Hidden — click Reveal</em></p>
+    <a href="{{ url_for('reveal', service_id=service.id) }}" class="btn btn-warning">Reveal (decrypt)</a>
+  {% endif %}
+  <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Back</a>
+{% endif %}
+
+{% if logs %}
+  <h3>Access Logs</h3>
+  <table class="table table-sm">
+    <thead><tr><th>Service ID</th><th>User ID</th><th>IP</th><th>When</th></tr></thead>
+    <tbody>
+      {% for l in logs %}
+      <tr>
+        <td>{{ l.service_id }}</td>
+        <td>{{ l.user_id }}</td>
+        <td>{{ l.ip }}</td>
+        <td>{{ l.accessed_at }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endif %}
+{% endblock %}

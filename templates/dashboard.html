@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="fade-in">
+  <!-- Dashboard Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1">🔐 Your Vault</h2>
+      <p class="text-muted mb-0">Manage your secure credentials</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('list_users') }}" class="btn btn-info btn-sm">
+        👥 Users
+      </a>
+      <a href="{{ url_for('my_shares') }}" class="btn btn-success btn-sm position-relative">
+        📤 Shares
+        {% if services_i_shared|length > 0 %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-light text-dark">
+            {{ services_i_shared|length }}
+          </span>
+        {% endif %}
+      </a>
+      <a href="{{ url_for('list_invites') }}" class="btn btn-warning btn-sm position-relative">
+        📧 Invites
+        {% if pending_invites_count > 0 %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+            {{ pending_invites_count }}
+          </span>
+        {% endif %}
+      </a>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="mb-4">
+    <a href="{{ url_for('add_service') }}" class="btn btn-primary btn-lg">
+      ➕ Add New Service
+    </a>
+  </div>
+
+  <!-- Info Tip -->
+  <div class="alert alert-info slide-in">
+    <strong>💡 Pro Tip:</strong> Share services with any email address. Unregistered users will automatically get access when they sign up!
+  </div>
+
+  <!-- Services Section -->
+  <h3>📦 My Services</h3>
+  {% if services %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th>Username</th>
+          <th>Share With</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in services %}
+        <tr class="slide-in">
+          <td>
+            <div class="d-flex align-items-center">
+              <div class="me-2" style="font-size: 1.5rem;">🔐</div>
+              <strong>{{ s.name }}</strong>
+            </div>
+          </td>
+          <td>
+            <span class="text-muted">{{ s.username }}</span>
+          </td>
+          <td>
+            <form method="POST" action="{{ url_for('share_service', service_id=s.id) }}" style="display:inline;">
+              <div class="input-group input-group-sm" style="max-width: 300px;">
+                <input type="email" class="form-control" name="email" placeholder="user@example.com" required>
+                <button type="submit" class="btn btn-info">📤</button>
+              </div>
+            </form>
+          </td>
+          <td>
+            <div class="btn-group btn-group-sm" role="group">
+              <a href="{{ url_for('access_service', service_id=s.id) }}" class="btn btn-primary" title="View credentials">
+                🔑
+              </a>
+              <a href="{{ url_for('edit_service', service_id=s.id) }}" class="btn btn-warning" title="Edit service">
+                ✏️
+              </a>
+              <form method="POST" action="{{ url_for('delete_service', service_id=s.id) }}" style="display:inline;" onsubmit="return confirm('⚠️ Delete {{ s.name }}?\n\nThis will permanently remove:\n• The service\n• All shares\n• All access logs\n\nThis action cannot be undone!');">
+                <button type="submit" class="btn btn-danger" title="Delete service">
+                  🗑️
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card text-center py-5">
+    <div class="card-body">
+      <div style="font-size: 4rem; margin-bottom: 1rem;">🔐</div>
+      <h4>Welcome to CredVault!</h4>
+      <p class="text-muted mb-4">Your vault is empty. Start by adding your first service.</p>
+      <a href="{{ url_for('add_service') }}" class="btn btn-primary btn-lg">
+        ➕ Add Your First Service
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Services I've Shared -->
+  <h3 class="mt-5">📤 Services I've Shared</h3>
+  {% if services_i_shared %}
+  <div class="card">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <p class="mb-0"><strong>{{ services_i_shared|length }}</strong> service(s) shared with others</p>
+        <a href="{{ url_for('my_shares') }}" class="btn btn-sm btn-success">Manage All →</a>
+      </div>
+      <div class="list-group list-group-flush">
+        {% for shared in services_i_shared[:3] %}
+        <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+          <div>
+            <strong>{{ shared.service_name }}</strong>
+            <span class="text-muted mx-2">→</span>
+            <span class="text-muted">{{ shared.shared_with_email }}</span>
+          </div>
+          <span class="badge bg-success">Active</span>
+        </div>
+        {% endfor %}
+        {% if services_i_shared|length > 3 %}
+        <div class="list-group-item border-0 px-0 text-center">
+          <em class="text-muted">... and {{ services_i_shared|length - 3 }} more</em>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="alert alert-secondary">
+    <p class="mb-0">💡 You haven't shared any services yet. Use the share button in the table above to collaborate with others.</p>
+  </div>
+  {% endif %}
+
+  <!-- Shared With You -->
+  <h3 class="mt-5">📥 Shared With You</h3>
+  {% if shared_services %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th>Username</th>
+          <th>Shared By</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for shared in shared_services %}
+        <tr class="slide-in">
+          <td>
+            <div class="d-flex align-items-center">
+              <div class="me-2" style="font-size: 1.5rem;">🎁</div>
+              <strong>{{ shared.service_name }}</strong>
+            </div>
+          </td>
+          <td><span class="text-muted">{{ shared.service_username }}</span></td>
+          <td>
+            <span class="badge bg-info">{{ shared.shared_by_email }}</span>
+          </td>
+          <td>
+            <a href="{{ url_for('access_service', service_id=shared.service_id) }}" class="btn btn-sm btn-primary">
+              🔑 Access
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card text-center py-4">
+    <div class="card-body">
+      <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
+      <p class="text-muted mb-0">No services have been shared with you yet.</p>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
