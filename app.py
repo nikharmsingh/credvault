@@ -15,6 +15,10 @@ app.config.from_object(Config)
 db.init_app(app)
 mail = Mail(app)
 
+# Initialize database tables
+with app.app_context():
+    db.create_all()
+
 # ---------------- HELPER FUNCTIONS ----------------
 
 def send_invitation_email(recipient_email, service_name, inviter_email):
